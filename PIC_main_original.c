@@ -80,10 +80,10 @@ void main(void) {
  // COnfiguration de l'oscillateur
         OSCCON = 0b01011010;  //configuration clock 1MHz
     OSCCONbits.SCS1 = 1;        // Selection de l'oscillateur interne (HF)
-   // OSCCONbits.IRCF = 0b1011;   // Oscillateur interne à 1MHz
-    // Configuration des ports entrée-sortie
-    TRISA = 0b00000001;          // PIN RA0 configuré en input, les autres en output
-    LATA = 0x00;                // Tous les PIN en état bas
+   // OSCCONbits.IRCF = 0b1011;   // Oscillateur interne Ã  1MHz
+    // Configuration des ports entrÃ©e-sortie
+    TRISA = 0b00000001;          // PIN RA0 configurÃ© en input, les autres en output
+    LATA = 0x00;                // Tous les PIN en Ã©tat bas
     ANSELAbits.ANSA0=1;
     ADCON1bits.ADCS=000;
     ADCON1bits.ADPREF =00;
@@ -242,7 +242,7 @@ __delay_ms(1000);
                
             /*   
                
-        //Changer l'état de la PIN RA5
+        //Changer l'Ã©tat de la PIN RA5
         LATAbits.LATA5 = ~LATAbits.LATA5;
         uart_data = 252;
             TXREG = uart_data;
@@ -325,10 +325,10 @@ void main(void) {
     
  // COnfiguration de l'oscillateur
     OSCCONbits.SCS1 = 1;        // Selection de l'oscillateur interne (HF)
-    OSCCONbits.IRCF = 0b1011;   // Oscillateur interne à 1MHz
-    // Configuration des ports entrée-sortie
-    TRISA = 0b00000011;          // PIN RA2 configuré en output, les autres en entrée
-    LATA = 0x00;                // Tous les PIN en état bas
+    OSCCONbits.IRCF = 0b1011;   // Oscillateur interne Ã  1MHz
+    // Configuration des ports entrÃ©e-sortie
+    TRISA = 0b00000011;          // PIN RA2 configurÃ© en output, les autres en entrÃ©e
+    LATA = 0x00;                // Tous les PIN en Ã©tat bas
     ANSELAbits.ANSA0=1;
     ADCON1bits.ADCS=000;
     ADCON1bits.ADPREF =00;
@@ -340,7 +340,7 @@ void main(void) {
     do{
         SLEEP();
         NOP();
-        //Changer l'état de la PIN RA5
+        //Changer l'Ã©tat de la PIN RA5
         LATAbits.LATA5 = ~LATAbits.LATA5;
 
         CLRWDT();              // Clear WDT
@@ -350,7 +350,7 @@ void main(void) {
     
 /*    do{
 
-        //Changer l'état de la PIN RA2
+        //Changer l'Ã©tat de la PIN RA2
        // LATAbits.LATA2 = ~LATAbits.LATA2;
         // Delai de 500ms
                   // LATAbits.LATA5=1;
@@ -395,7 +395,7 @@ void main(void) {
 #pragma config BORV = LO        // Brown-out Reset Voltage Selection (Brown-out Reset Voltage (Vbor), low trip point selected.)
 #pragma config LVP = ON         // Low-Voltage Programming Enable (Low-voltage programming enabled)
 
-#define _XTAL_FREQ 4000000   //frequence à 4MHz
+#define _XTAL_FREQ 4000000   //frequence Ã  4MHz
 
 char uart_data;
 
@@ -429,7 +429,7 @@ uart_data = 0x57;
     RCSTA = 0b10010000; // Asynchron RX config, sur 8 bits
     ANSELA = 0x00;      // pas d'analog
     TRISAbits.TRISA0=1;
-    LATA = 0x00;                // Tous les PIN en état bas
+    LATA = 0x00;                // Tous les PIN en Ã©tat bas
     ANSELAbits.ANSA0=1;
     ADCON1bits.ADCS=000;
     ADCON1bits.ADPREF =00;
@@ -523,10 +523,10 @@ void variable_delay(int attente)
 void main(void) {
  // COnfiguration de l'oscillateur
     OSCCONbits.SCS1 = 1;        // Selection de l'oscillateur interne (HF)
-    OSCCONbits.IRCF = 0b1011;   // Oscillateur interne à 1MHz
-    // Configuration des ports entrée-sortie
-    TRISA = 0b00111011;          // PIN RA2 configuré en output, les autres en entrée
-    LATA = 0x00;                // Tous les PIN en état bas
+    OSCCONbits.IRCF = 0b1011;   // Oscillateur interne Ã  1MHz
+    // Configuration des ports entrÃ©e-sortie
+    TRISA = 0b00111011;          // PIN RA2 configurÃ© en output, les autres en entrÃ©e
+    LATA = 0x00;                // Tous les PIN en Ã©tat bas
     
     // INIT UART
     APFCONbits.RXDTSEL = 1; //Select RX on RA5 (instead of RA0)
@@ -558,7 +558,7 @@ void main(void) {
  //#########################    mainloop   #####################################
     
     do{
-        //Changer l'état de la PIN RA2
+        //Changer l'Ã©tat de la PIN RA2
       //  LATAbits.LATA2 = ~LATAbits.LATA2;
         // Delai de 500ms
         //variable_delay(valeur_adc);
