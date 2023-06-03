@@ -1,7 +1,15 @@
 
 
-/* this code comes from https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi/examples/HTTPSRequest
- *  Interesting also: https://maakbaas.com/esp8266-iot-framework/logs/https-requests/
+/* this code is for Wemo D1 Lite, but applies to any ESP8266 bbased board.
+ It works with :
+-  RX connected to the output of the TIC demodulator
+- 3.3V connected to the 3.3V of the board,
+- GND connected to GND1 of the board
+- A0 connected to a voltage divisor to monitor the capacitor's voltage
+- PIN 16 and RST to be connected together
+Note that baud rate should be adapted depending on the Linky's version (9600 and SINTS instead of 1200 and PAPP).
+HTTPS requests were inspired  from https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi/examples/HTTPSRequest
+*  Interesting also: https://maakbaas.com/esp8266-iot-framework/logs/https-requests/
  *  
 */
 
@@ -26,10 +34,11 @@ String currentDate = "";
 
 #define STASSID "WIFI_SSID"
 #define STAPSK "WIFI_P@ssword"
+
 #endif
 #include <EEPROM.h>
-//  IPAddress ip(192, 168, 66, 105);   // fixed IP address if no DHCP, but for normal houses, should not be added
-//  IPAddress gateway_dns(192, 168, 66, 1); // gateway. Must be removed, and check if it works without
+ // IPAddress ip(192, 168, 66, 105);   // fixed IP address if no DHCP, but for normal houses, should not be added
+ // IPAddress gateway_dns(192, 168, 66, 1); // gateway. Must be removed, and check if it works without
 
 //const long utcOffsetInSeconds = 3600;
 
@@ -58,13 +67,14 @@ long int timeoutReadLinky = 0; // timeout to stop trying to read linky if there 
 const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
 int BatteryVoltage = 0;
 int Danger = 0; // indicate if Power > Powermax
-int Powermax = 500; // to be read from Linky, and stored in EEPROM
+int Powermax = 10000; // to be read from Linky, and stored in EEPROM
 long int t1 = 0;
 long int t2=0;
   //  String serverName = "http://192.168.66.17:3000/SendData?voltage="; // server and start of data to  send the data
   //String serverName = "http://charge-angels.com/v1/api/assets/6365122519b9aa99b068c09a/consumptions";
-uint voltageThreshold = 207; // voltage limit to startup the communication
-uint voltageThreshold2 = 180; // voltage limit to startup the process
+uint voltageThreshold = 190; //207; // voltage limit to startup the communication
+uint voltageThreshold2 = 170; // voltage limit to startup the process
+const char* TIP_host = "tip-imredd.unice.fr";
 
     // Update these with values suitable for your network.
   //  const char* ssid = "livinglab"; // wifi ssid
@@ -77,13 +87,13 @@ const char* password = STAPSK;
 X509List cert(cert_DigiCert_Global_Root_CA);
 
    // ################ set up wifi + send message function, is triggered only 
-   // when voltage is high enough##################### 
-    void setup_wifi() {
+
+   void setup_wifi_TIP() {
 
   
       //WiFi.mode(WIFI_STA);
 
-   //  WiFi.config(ip, gateway_dns, gateway_dns); 
+  //   WiFi.config(ip, gateway_dns, gateway_dns); 
       WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -92,7 +102,198 @@ X509List cert(cert_DigiCert_Global_Root_CA);
 
   
  
-  configTime(3 * 3600, 0,"134.59.1.5", "pool.ntp.org", "time.nist.gov");
+  configTime(3 * 3600, 0,"134.59.1.5", "pool.ntp.org", "time.nist.gov"); // to be changed with another ntp server
+
+  time_t now = time(nullptr);
+  while (now < 8 * 3600 * 2) {
+    delay(500);
+    now = time(nullptr);
+  }
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+ int epoch_time = now;
+
+
+  
+ /* 
+// Define NTP Client to get time
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffsetInSeconds);
+timeClient.update();
+int hourvalue = timeClient.getHours();
+int minutevalue = timeClient.getMinutes();
+int secondvalue = timeClient.getSeconds();*/
+//int epoch_time = now;
+
+// define starting date
+String monthstringstart = "";
+String yearstringstart = "";
+String daystringstart = "";
+String hourstringstart = "";
+String minutestringstart = "";
+String secondstringstart = "";
+
+String monthstringend = "";
+String yearstringend = "";
+String daystringend = "";
+String hourstringend = "";
+String minutestringend = "";
+String secondstringend = "";
+
+
+if (month(epoch_time)>9) {
+   monthstringstart = String(month(epoch_time));
+}else {
+   monthstringstart = "0"+String(month(epoch_time));
+}
+if (day(epoch_time)>9) {
+   daystringstart = String(day(epoch_time));
+}else {
+    daystringstart = "0"+String(day(epoch_time));
+}
+if (hour(epoch_time)>9) {
+   hourstringstart = String(hour(epoch_time));
+}else {
+    hourstringstart = "0"+String(hour(epoch_time));
+}
+if (minute(epoch_time)>9) {
+   minutestringstart = String(minute(epoch_time));
+}else {
+   minutestringstart = "0"+String(minute(epoch_time));
+}
+if (second(epoch_time)>9) {
+   secondstringstart = String(second(epoch_time));
+}else {
+   secondstringstart = "0"+String(second(epoch_time));
+}
+ yearstringstart = String(year(epoch_time));
+int counter_moyenne_int = counter_moyenne;
+// define end date:
+epoch_time=epoch_time + 1;//15*max(1,counter_moyenne_int); // IF WE HAVE SLEEP EVERY 10-15 SECONDS
+if (month(epoch_time)>9) {
+   monthstringend = String(month(epoch_time));
+}else {
+   monthstringend = "0"+String(month(epoch_time));
+}
+if (day(epoch_time)>9) {
+   daystringend = String(day(epoch_time));
+}else {
+    daystringend = "0"+String(day(epoch_time));
+}
+if (hour(epoch_time)>9) {
+   hourstringend = String(hour(epoch_time));
+}else {
+    hourstringend = "0"+String(hour(epoch_time));
+}
+if (minute(epoch_time)>9) {
+   minutestringend = String(minute(epoch_time));
+}else {
+   minutestringend = "0"+String(minute(epoch_time));
+}
+if (second(epoch_time)>9) {
+   secondstringend = String(second(epoch_time));
+}else {
+   secondstringend = "0"+String(second(epoch_time));
+}
+ yearstringend = String(year(epoch_time));
+
+
+
+
+
+
+
+
+
+  WiFiClientSecure client;
+  //client.setTrustAnchors(&cert);
+  client.setInsecure(); //the magic line, use with caution
+
+  
+//String currentDate = String(currentYear) + "-" + String(currentMonth) + "-" + String(monthDay);
+ // Serial.println("Date: "+ String(year(epoch_time))+"-"+ String(month(epoch_time))+"-"+String(day(epoch_time))+" "+ String(hour(epoch_time))+"-"+ String(minute(epoch_time))+"-"+ String(second(epoch_time)));
+  //Serial.println(currentDate);
+  // HTTPClient http;
+   //String serverPath = serverName;   // + "?temperature=24.37";
+ //String httpRequestData = "{\"assetID\": \"6365122519b9aa99b068c09a\",\"startedAt\": \""+yearstringstart+"-"+monthstringstart+"-"+daystringstart+"T"+hourstringstart+":"+minutestringstart+":"+secondstringstart+".000Z\",\"endedAt\": \""+yearstringend+"-"+monthstringend+"-"+daystringend+"T"+hourstringend+":"+minutestringend+":"+secondstringend+".000Z\",\"instantWatts\": "+String(puissanceCommuniquee)+",\"instantWattsL1\": 0,\"instantWattsL2\": 0,\"instantWattsL3\": 0,\"instantAmps\": 0,\"instantAmpsL1\": 0,\"instantAmpsL2\": 0,\"instantAmpsL3\": 0,\"instantVolts\": 0,\"instantVoltsL1\": 0,\"instantVoltsL2\": 0,\"instantVoltsL3\": 0,\"consumptionWh\": 0,\"consumptionAmps\": 0,\"stateOfCharge\": 0}";
+
+
+
+  if (!client.connect(TIP_host, github_port)) {
+    //Connection failed
+    return;
+  }
+
+  //String url = "/v1/api/assets/6365122519b9aa99b068c09a/consumptions"; //"/a/check";
+  String url = "/nodes/imredd/energyconso/linky";
+
+String httpRequestData = "linkySensor,sensor_id=LinkyLivingLab power="+String(puissanceCommuniquee)+",danger="+String(Danger)+",voltage=234.231,frequency=50.2,pf=0.9 "+String(epoch_time)+"000000000";
+ client.print(String("POST ") + url + " HTTP/1.0\r\n" + "Host: " + TIP_host + "\r\n" + "User-Agent: BuildFailureDetectorESP8266\r\n" +  "Content-Length: " + httpRequestData.length()   + "\r\n"+"Connection: close\r\n\r\n"+httpRequestData);
+
+
+/*client.stop();
+    if (client.connect(github_host, 443)) {
+ 
+      client.println("POST " + url + " HTTP/1.0");
+      client.println("Host: " + (String)github_host);
+      client.println(F("User-Agent: ESP"));
+      client.println(F("Connection: close"));
+      client.println(F("Content-Type: application/json"));
+      client.println(F("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0MjU2MGNmNTY2ODlkNzk5MDBkZGU3MSIsInJvbGUiOiJBIiwicm9sZXNBQ0wiOlsiYWRtaW4iXSwibmFtZSI6IklNUkVERCIsIm1vYmlsZSI6IiIsImVtYWlsIjoiYmVub2l0LmNvdXJhdWRAdW5pY2UuZnIiLCJmaXJzdE5hbWUiOiJBUEkiLCJsb2NhbGUiOiJlbl9VUyIsImxhbmd1YWdlIjoiZW4iLCJjdXJyZW5jeSI6IkVVUiIsInRlbmFudElEIjoiNWMzZGU5MTA2NmMwM2YwMDA5OGRhNDBhIiwidGVuYW50TmFtZSI6IklNUkVERCAoQ2l0eSBvZiBOaWNlKSIsInRlbmFudFN1YmRvbWFpbiI6ImltcmVkZCIsInVzZXJIYXNoSUQiOiJmZTZhMjBjYTIzOWY2MjdhZTNkY2NhN2QwNWFmMDYzODZiNzY2ZGFiYTEyNmZmNzBkYTg4NmYwNTgzMjkxOTU3IiwidGVuYW50SGFzaElEIjoiYTI5NzRmODEzZGVkZDUyOTk2YTExNTQ3ZTMyYWJjMDE2ZmFjNDBmMTlhMWI2YWRmYmEzMGFlYTFlY2ExYTM0YiIsInNjb3BlcyI6WyJBc3NldDpJbkVycm9yIiwiQXNzZXQ6TGlzdCIsIkJpbGxpbmdBY2NvdW50Okxpc3QiLCJCaWxsaW5nVHJhbnNmZXI6TGlzdCIsIkNhcjpMaXN0IiwiQ2FyQ2F0YWxvZzpMaXN0IiwiQ2hhcmdpbmdQcm9maWxlOkxpc3QiLCJDaGFyZ2luZ1N0YXRpb246SW5FcnJvciIsIkNoYXJnaW5nU3RhdGlvbjpMaXN0IiwiQ29tcGFueTpMaXN0IiwiQ29ubmVjdGlvbjpMaXN0IiwiSW52b2ljZTpMaXN0IiwiTG9nZ2luZzpMaXN0IiwiT2NwaUVuZHBvaW50Okxpc3QiLCJPaWNwRW5kcG9pbnQ6TGlzdCIsIlBheW1lbnRNZXRob2Q6TGlzdCIsIlBsYW5uaW5nOkxpc3QiLCJQcmljaW5nRGVmaW5pdGlvbjpMaXN0IiwiUmVnaXN0cmF0aW9uVG9rZW46TGlzdCIsIlNldHRpbmc6TGlzdCIsIlNpdGU6TGlzdCIsIlNpdGVBcmVhOkxpc3QiLCJTaXRlVXNlcjpMaXN0IiwiU291cmNlOkxpc3QiLCJUYWc6TGlzdCIsIlRhZzpVcGRhdGUiLCJUYXg6TGlzdCIsIlRyYW5zYWN0aW9uOkluRXJyb3IiLCJUcmFuc2FjdGlvbjpMaXN0IiwiVXNlcjpJbkVycm9yIiwiVXNlcjpMaXN0IiwiVXNlcjpVcGRhdGUiLCJVc2VyR3JvdXA6TGlzdCIsIlVzZXJTaXRlOkxpc3QiXSwiYWN0aXZlQ29tcG9uZW50cyI6WyJwcmljaW5nIiwib3JnYW5pemF0aW9uIiwiY2FyIiwiYXNzZXQiLCJzdGF0aXN0aWNzIiwic21hcnRDaGFyZ2luZyJdLCJhY3RpdmVGZWF0dXJlcyI6WyJjaGFyZ2luZ1N0YXRpb25NYXAiLCJjaGFyZ2luZ1N0YXRpb25QbGFubmluZyIsInVzZXJHcm91cCIsInVzZXJQcmljaW5nIiwidXNlckdyb3VwUHJpY2luZyJdLCJpYXQiOjE2ODIwNjU1ODAsImV4cCI6MTY5NzYxNzU4MH0.1C9H2giT6xGbDNAVgeuGPuHphHZD0VbkPrDdA_uNg-8"));
+      client.print(F("Content-Length: "));
+      client.println(httpRequestData.length());
+      client.println();
+      client.println(httpRequestData);
+
+    } */
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
+   // when voltage is high enough##################### 
+    void setup_wifiChargeAngels() {
+
+  
+      //WiFi.mode(WIFI_STA);
+
+    // WiFi.config(ip, gateway_dns, gateway_dns); 
+      WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(50);
+  }
+
+  
+ 
+  configTime(3 * 3600, 0,"134.59.1.5", "pool.ntp.org", "time.nist.gov"); // to be changed with another ntp server
 
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
@@ -204,8 +405,8 @@ if (second(epoch_time)>9) {
   //Serial.println(currentDate);
   // HTTPClient http;
    //String serverPath = serverName;   // + "?temperature=24.37";
- String httpRequestData = "{\"assetID\": \"6365122519b9aa99b068c09a\",\"startedAt\": \""+yearstringstart+"-"+monthstringstart+"-"+daystringstart+"T"+hourstringstart+":"+minutestringstart+":"+secondstringstart+".000Z\",\"endedAt\": \""+yearstringend+"-"+monthstringend+"-"+daystringend+"T"+hourstringend+":"+minutestringend+":"+secondstringend+".000Z\",\"instantWatts\": "+String(puissanceCommuniquee)+",\"instantWattsL1\": 0,\"instantWattsL2\": 0,\"instantWattsL3\": 0,\"instantAmps\": 0,\"instantAmpsL1\": 0,\"instantAmpsL2\": 0,\"instantAmpsL3\": 0,\"instantVolts\": 0,\"instantVoltsL1\": 0,\"instantVoltsL2\": 0,\"instantVoltsL3\": 0,\"consumptionWh\": 0,\"consumptionAmps\": 0,\"stateOfCharge\": 0}";
-
+ String httpRequestData = "{\"assetID\": \"123456789\",\"startedAt\": \""+yearstringstart+"-"+monthstringstart+"-"+daystringstart+"T"+hourstringstart+":"+minutestringstart+":"+secondstringstart+".000Z\",\"endedAt\": \""+yearstringend+"-"+monthstringend+"-"+daystringend+"T"+hourstringend+":"+minutestringend+":"+secondstringend+".000Z\",\"instantWatts\": "+String(puissanceCommuniquee)+",\"instantWattsL1\": 0,\"instantWattsL2\": 0,\"instantWattsL3\": 0,\"instantAmps\": 0,\"instantAmpsL1\": 0,\"instantAmpsL2\": 0,\"instantAmpsL3\": 0,\"instantVolts\": 0,\"instantVoltsL1\": 0,\"instantVoltsL2\": 0,\"instantVoltsL3\": 0,\"consumptionWh\": 0,\"consumptionAmps\": 0,\"stateOfCharge\": 0}";
+//id 123456789 to be changed to six365122519b9aa99b068c09a
 
 
   if (!client.connect(github_host, github_port)) {
@@ -226,7 +427,7 @@ client.stop();
       client.println(F("User-Agent: ESP"));
       client.println(F("Connection: close"));
       client.println(F("Content-Type: application/json"));
-      client.println(F("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjYzNzg5OTJjYWVjNzRmYmE1ODllNDc4NiIsInJvbGUiOiJBIiwicm9sZXNBQ0wiOlsiYWRtaW4iXSwibmFtZSI6IkxJTktZIiwibW9iaWxlIjoiIiwiZW1haWwiOiJsaW5reUB0ZXN0LmZyIiwiZmlyc3ROYW1lIjoiQVBJIFVzZXIiLCJsb2NhbGUiOiJmcl9GUiIsImxhbmd1YWdlIjoiZnIiLCJjdXJyZW5jeSI6IkVVUiIsInRlbmFudElEIjoiNjFkYjQyMWVkZDg2MWQ5MmM3Zjc5YzQ2IiwidGVuYW50TmFtZSI6IlRlc3QgQ2hhcmdlciIsInRlbmFudFN1YmRvbWFpbiI6InRlc3RjaGFyZ2VyIiwidXNlckhhc2hJRCI6ImJiZDBmZmEyNzk2ZDRkMTI2OGQwMTFiZWM5Yjk0YWVmMThkYjVkNjMyYjcyMzJjY2JjYWVmMWI3YzU5YTI5NzUiLCJ0ZW5hbnRIYXNoSUQiOiJlZTlkZGZhMWY0ODhlYTIwMWNhZDE5MmIzOWIyOGZlYWVjNjMzY2U3OTRhMGViZWI3OTY0ZjlkMjBmZjA3NjY2Iiwic2NvcGVzIjpbIkFzc2V0OkluRXJyb3IiLCJBc3NldDpMaXN0IiwiQmlsbGluZ0FjY291bnQ6TGlzdCIsIkJpbGxpbmdUcmFuc2ZlcjpMaXN0IiwiQ2FyOkxpc3QiLCJDYXJDYXRhbG9nOkxpc3QiLCJDaGFyZ2luZ1Byb2ZpbGU6TGlzdCIsIkNoYXJnaW5nU3RhdGlvbjpJbkVycm9yIiwiQ2hhcmdpbmdTdGF0aW9uOkxpc3QiLCJDb21wYW55Okxpc3QiLCJDb25uZWN0aW9uOkxpc3QiLCJJbnZvaWNlOkxpc3QiLCJMb2dnaW5nOkxpc3QiLCJPY3BpRW5kcG9pbnQ6TGlzdCIsIk9pY3BFbmRwb2ludDpMaXN0IiwiUGF5bWVudE1ldGhvZDpMaXN0IiwiUGxhbm5pbmc6TGlzdCIsIlByaWNpbmdEZWZpbml0aW9uOkxpc3QiLCJSZWdpc3RyYXRpb25Ub2tlbjpMaXN0IiwiU2V0dGluZzpMaXN0IiwiU2l0ZTpMaXN0IiwiU2l0ZUFyZWE6TGlzdCIsIlNpdGVVc2VyOkxpc3QiLCJTb3VyY2U6TGlzdCIsIlRhZzpMaXN0IiwiVGFnOlVwZGF0ZSIsIlRheDpMaXN0IiwiVHJhbnNhY3Rpb246SW5FcnJvciIsIlRyYW5zYWN0aW9uOkxpc3QiLCJVc2VyOkluRXJyb3IiLCJVc2VyOkxpc3QiLCJVc2VyOlVwZGF0ZSIsIlVzZXJHcm91cDpMaXN0IiwiVXNlclNpdGU6TGlzdCJdLCJhY3RpdmVDb21wb25lbnRzIjpbIm9jcGkiLCJwcmljaW5nIiwiYmlsbGluZyIsImJpbGxpbmdQbGF0Zm9ybSIsIm9yZ2FuaXphdGlvbiIsImNhciIsImNhckNvbm5lY3RvciIsImFzc2V0Iiwic3RhdGlzdGljcyIsImFuYWx5dGljcyIsInNtYXJ0Q2hhcmdpbmciXSwiYWN0aXZlRmVhdHVyZXMiOlsiY2hhcmdpbmdTdGF0aW9uTWFwIiwidXNlckdyb3VwcyIsInVzZXJQcmljaW5nIl0sImlhdCI6MTY3OTU4MjEwOCwiZXhwIjoxNjk1MTM0MTA4fQ.PbweX84KNqtVpxt1Tq83WRSJQoiipXrbfMbmOJAD6xw"));
+      client.println(F("Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY0MjU2MGNmNTY2ODlkNzk5MDBkZGU3MSIsInJvbGUiOiJBIiwicm9sZXNBQ0wiOlsiYWRtaW4iXSwibmFtZSI6IklNUkVERCIsIm1vYmlsZSI6IiIsImVtYWlsIjoiYmVub2l0LmNvdXJhdWRAdW5pY2UuZnIiLCJmaXJzdE5hbWUiOiJBUEkiLCJsb2NhbGUiOiJlbl9VUyIsImxhbmd1YWdlIjoiZW4iLCJjdXJyZW5jeSI6IkVVUiIsInRlbmFudElEIjoiNWMzZGU5MTA2NmMwM2YwMDA5OGRhNDBhIiwidGVuYW50TmFtZSI6IklNUkVERCAoQ2l0eSBvZiBOaWNlKSIsInRlbmFudFN1YmRvbWFpbiI6ImltcmVkZCIsInVzZXJIYXNoSUQiOiJmZTZhMjBjYTIzOWY2MjdhZTNkY2NhN2QwNWFmMDYzODZiNzY2ZGFiYTEyNmZmNzBkYTg4NmYwNTgzMjkxOTU3IiwidGVuYW50SGFzaElEIjoiYTI5NzRmODEzZGVkZDUyOTk2YTExNTQ3ZTMyYWJjMDE2ZmFjNDBmMTlhMWI2YWRmYmEzMGFlYTFlY2ExYTM0YiIsInNjb3BlcyI6WyJBc3NldDpJbkVycm9yIiwiQXNzZXQ6TGlzdCIsIkJpbGxpbmdBY2NvdW50Okxpc3QiLCJCaWxsaW5nVHJhbnNmZXI6TGlzdCIsIkNhcjpMaXN0IiwiQ2FyQ2F0YWxvZzpMaXN0IiwiQ2hhcmdpbmdQcm9maWxlOkxpc3QiLCJDaGFyZ2luZ1N0YXRpb246SW5FcnJvciIsIkNoYXJnaW5nU3RhdGlvbjpMaXN0IiwiQ29tcGFueTpMaXN0IiwiQ29ubmVjdGlvbjpMaXN0IiwiSW52b2ljZTpMaXN0IiwiTG9nZ2luZzpMaXN0IiwiT2NwaUVuZHBvaW50Okxpc3QiLCJPaWNwRW5kcG9pbnQ6TGlzdCIsIlBheW1lbnRNZXRob2Q6TGlzdCIsIlBsYW5uaW5nOkxpc3QiLCJQcmljaW5nRGVmaW5pdGlvbjpMaXN0IiwiUmVnaXN0cmF0aW9uVG9rZW46TGlzdCIsIlNldHRpbmc6TGlzdCIsIlNpdGU6TGlzdCIsIlNpdGVBcmVhOkxpc3QiLCJTaXRlVXNlcjpMaXN0IiwiU291cmNlOkxpc3QiLCJUYWc6TGlzdCIsIlRhZzpVcGRhdGUiLCJUYXg6TGlzdCIsIlRyYW5zYWN0aW9uOkluRXJyb3IiLCJUcmFuc2FjdGlvbjpMaXN0IiwiVXNlcjpJbkVycm9yIiwiVXNlcjpMaXN0IiwiVXNlcjpVcGRhdGUiLCJVc2VyR3JvdXA6TGlzdCIsIlVzZXJTaXRlOkxpc3QiXSwiYWN0aXZlQ29tcG9uZW50cyI6WyJwcmljaW5nIiwib3JnYW5pemF0aW9uIiwiY2FyIiwiYXNzZXQiLCJzdGF0aXN0aWNzIiwic21hcnRDaGFyZ2luZyJdLCJhY3RpdmVGZWF0dXJlcyI6WyJjaGFyZ2luZ1N0YXRpb25NYXAiLCJjaGFyZ2luZ1N0YXRpb25QbGFubmluZyIsInVzZXJHcm91cCIsInVzZXJQcmljaW5nIiwidXNlckdyb3VwUHJpY2luZyJdLCJpYXQiOjE2ODIwNjU1ODAsImV4cCI6MTY5NzYxNzU4MH0.1C9H2giT6xGbDNAVgeuGPuHphHZD0VbkPrDdA_uNg-8"));
       client.print(F("Content-Length: "));
       client.println(httpRequestData.length());
       client.println();
@@ -305,10 +506,112 @@ void readLinky(){
         counter_moyennetemp = counter_moyenne;
         counter_moyenne = 1;
         Danger = 1;
-        setup_wifi();
+        setup_wifi_TIP();
         Danger = 0;
         counter_moyenne = counter_moyennetemp;
         }      
+        }
+      else {  // if we have received a digit, we store it
+         if (isdigit(caracter))
+         puissance[indice] = caracter;
+         //indice = indice +1;}
+         else puissance[indice] = '0'; 
+         indice = indice +1;
+        //start_record = false;
+        // counter_moyenne = counter_moyenne-1;  //we should discard the number  instead of putting a 0 
+       // indice = 0;
+       // finished_recording=true;}
+
+        }
+    }
+    else
+    {
+ //   if (detectSINSTS[0]=='S' && detectSINSTS[1]=='I' && detectSINSTS[2]=='N' && detectSINSTS[3]=='S' &&detectSINSTS[4]=='T' && detectSINSTS[5]=='S')  
+     if (detectPAPP[0]=='P' && detectPAPP[1]=='A' && detectPAPP[2]=='P' && detectPAPP[3]=='P' && detectPAPP[4]==' ' )  
+    {
+      start_record = true;
+          counter_moyenne = counter_moyenne+1;
+          for (int i = 0; i < sizeof(puissance)/sizeof(puissance[0]); i++){
+          puissance[i] = 0;}
+    }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+   // ################ listen to Linky, every 15 seconds ##################### 
+void readLinky2(){
+//digitalWrite(0, LOW); // initialisation
+//delay(50);               
+// digitalWrite(0, HIGH); // initialisation
+//delay(50);
+  int communication = Serial.available(); 
+  if (communication != 0)  // when we receive a character
+  {
+    char caracter = Serial.read(); 
+    // we slide the array of detect_PAPP to keep collecting characters
+  /*  detectSINSTS[0]=detectSINSTS[1];  
+    detectSINSTS[1]=detectSINSTS[2];
+    detectSINSTS[2]=detectSINSTS[3];
+    detectSINSTS[3]=detectSINSTS[4];
+    detectSINSTS[4]=detectSINSTS[5];
+    detectSINSTS[5]=detectSINSTS[6];
+    detectSINSTS[6]=caracter; */
+    detectPAPP[0]=detectPAPP[1];  
+    detectPAPP[1]=detectPAPP[2];
+    detectPAPP[2]=detectPAPP[3];
+    detectPAPP[3]=detectPAPP[4];
+    detectPAPP[4]=caracter;
+    if (start_record == true ) // if we have received "PAPP " or "SINST ", we start recording the power
+    {
+     if (indice>=5 )//&& (caracter == ' ' || isdigit(caracter)==false)) // if we receive a space, the power information is over. could be more robust by considering anything above 9
+      {
+        indice = 0;
+        start_record = false;
+        puissance_int = String(puissance).toInt();
+        puissance_Uint = (unsigned int)puissance_int;
+        puissance_moyenne = puissance_moyenne + puissance_Uint;
+        finished_recording=true;
+        if (puissance_int > Powermax)  // if the power is above 6kW
+        { 
+        puissanceCommuniquee = puissance_int;
+        counter_moyennetemp = counter_moyenne;
+        counter_moyenne = 1;
+        Danger = 1;
+        setup_wifi_TIP();
+        Danger = 0;
+        counter_moyenne = counter_moyennetemp;
+        }
+       /* if (puissance_int > Powermax_test_relai)  // if the power is above 6kW
+        { 
+          Need_to_cut = 1;
+        } */        
         }
       else {  // if we have received a digit, we store it
          if (isdigit(caracter))
@@ -323,11 +626,37 @@ void readLinky(){
      if (detectPAPP[0]=='P' && detectPAPP[1]=='A' && detectPAPP[2]=='P' && detectPAPP[3]=='P' && detectPAPP[4]==' ' )  
     {
       start_record = true;
-          counter_moyenne = counter_moyenne+1; 
+          counter_moyenne = counter_moyenne+1;
+          for (int i = 0; i < sizeof(puissance)/sizeof(puissance[0]); i++){
+          puissance[i] = 0;}
     }
     }
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
  void setup() {
   pinMode(0, OUTPUT);
@@ -336,6 +665,8 @@ void readLinky(){
   digitalWrite(0, LOW);
     delay(100);
    digitalWrite(0, HIGH); // initialisation
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
 
        BatteryVoltage = analogRead(analogInPin); // we read voltage
 if (BatteryVoltage>voltageThreshold2)
@@ -370,16 +701,18 @@ if (BatteryVoltage>voltageThreshold2)
       counterwakeup = counterwakeup+1; // we count the number of times the dongle woke up and stored data in the power average
       t1 = millis(); // we start to record time to use the timeout to go to sleep if we do not read any data from Linky
        BatteryVoltage = analogRead(analogInPin); // we read voltage
-      
+
       timeoutReadLinky = 0;
        while(finished_recording == false && timeoutReadLinky<5000){  
-             readLinky(); // we read Linky data until we have found a data (finished_recording) or if the timeout is reached 
+             readLinky2(); // we read Linky data until we have found a data (finished_recording) or if the timeout is reached 
              t2 = millis();
              timeoutReadLinky = t2-t1; 
         }
+
+
          if(BatteryVoltage>voltageThreshold && finished_recording) {  // if we have enough voltage, we send the data and reinitialise the values
           puissanceCommuniquee=puissance_moyenne/counter_moyenne;   
-            setup_wifi();
+            setup_wifi_TIP();
             counterwakeup = 0;
             counter_moyenne = 0;
             puissance_moyenne = 0;
