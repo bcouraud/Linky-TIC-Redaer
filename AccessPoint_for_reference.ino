@@ -7,8 +7,8 @@
  
 /*Specifying the SSID and Password of the AP*/
  
-const char* ap_ssid = "ESP8266"; //Access Point SSID
-const char* ap_password= "password"; //Access Point Password
+const char* ap_ssid = "LinkyTicReader"; //Access Point SSID
+const char* ap_password= "P@ssword"; //Access Point Password
 uint8_t max_connections=8;//Maximum Connection Limit for AP
 int current_stations=0, new_stations=0;
  
