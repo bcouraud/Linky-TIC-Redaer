@@ -28,8 +28,8 @@ String currentDate = "";
 #define STAPSK "WIFI_P@ssword"
 #endif
 #include <EEPROM.h>
-  IPAddress ip(192, 168, 66, 105);   // fixed IP address if no DHCP, but for normal houses, should not be added
-  IPAddress gateway_dns(192, 168, 66, 1); // gateway. Must be removed, and check if it works without
+//  IPAddress ip(192, 168, 66, 105);   // fixed IP address if no DHCP, but for normal houses, should not be added
+//  IPAddress gateway_dns(192, 168, 66, 1); // gateway. Must be removed, and check if it works without
 
 //const long utcOffsetInSeconds = 3600;
 
@@ -83,7 +83,7 @@ X509List cert(cert_DigiCert_Global_Root_CA);
   
       //WiFi.mode(WIFI_STA);
 
-     WiFi.config(ip, gateway_dns, gateway_dns); 
+   //  WiFi.config(ip, gateway_dns, gateway_dns); 
       WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
