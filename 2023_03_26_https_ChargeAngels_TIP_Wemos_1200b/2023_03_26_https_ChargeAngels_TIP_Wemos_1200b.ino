@@ -24,12 +24,8 @@ String currentDate = "";
 
 #ifndef STASSID
 
-#define STASSID "Livbx195"
-#define STAPSK "P@ssword19"
-//#define STASSID "Wifi-Flat"
-//#define STAPSK "P@ssword19"
-#define STASSID "livinglab"
-#define STAPSK "2021#Bowl@LivingLab"
+#define STASSID "WIFI_SSID"
+#define STAPSK "WIFI_P@ssword"
 #endif
 #include <EEPROM.h>
   IPAddress ip(192, 168, 66, 105);   // fixed IP address if no DHCP, but for normal houses, should not be added
