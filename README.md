@@ -9,4 +9,4 @@ The architecture includes:
 The current folder includes:
 - The PCB files to reproduce it. They can be opened from KICad free software
 - The arduino code for the wemo module to operate: wake up - read the TIC information - read the capacitor voltage - if there is enough energy in the capcitor, send the data in https.
-- The C code for the microchip PIC 12F1840
+- The C code for the microchip PIC 12F1840 that was developed in MPLAB IDE, and programmed into the microcontroller using a PicKit 2 directly plugged into the dedicated connectors in the PCB
