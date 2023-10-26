@@ -1,4 +1,4 @@
-# Linky-TIC-Redaer
+# Linky-TIC-Reader
 This repository stores the files to reproduce a Linky TIC Reader.
 The architecture includes:
 - A communication moduel, i.e. a Wemo D1 Lite that can be programmed from the arduino IDE
